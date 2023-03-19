@@ -3,10 +3,10 @@ engine.name = 'Convolution'
 local rxNorns = include 'lib/rxNorns'
 
 function enc(n,d) rxNorns.encoderO:onNext({n=n, d=d}) end
-function key(n,d) rxNorns.keyO:onNext({n=n, z=z}) end
+--function key(n,d) rxNorns.keyO:onNext({n=n, z=z}) end
 
 rxNorns.encoderO:subscribe(function() redraw() end)
-rxNorns.keyO:subscribe(function() redraw() end)
+--rxNorns.keyO:subscribe(function() redraw() end)
 
 function scale(n)
   return n * 0.01;
@@ -70,11 +70,3 @@ rxNorns.enc3
   state.params.wet = d or state.params.wet;
   engine.wet(scale(d));
 end)
-
--- send IR to SC
---rxNorns.key3
---:filter(function() return state.ui.line == 3 end)
---:subscribe(function()
-  --state.params.file = state.ui.file;
-  --engine.onFile(irPath(state.files[state.params.file]));
---end)
