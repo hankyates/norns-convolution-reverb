@@ -1,5 +1,5 @@
 Engine_Convolution : CroneEngine {
-  var bufsize, irBuffer, convolution;
+  var bufsize, irL, irR, convolution;
 
   *new { arg context, doneCallback;
     ^super.new(context, doneCallback);
@@ -9,18 +9,23 @@ Engine_Convolution : CroneEngine {
 
     ~fftsize = 1024;
 
-    irBuffer = Buffer.read(context.server, "/home/we/dust/code/convolution-reverb/assets/fort-flagler-powder-room.wav");
+    irL = Buffer.readChannel(context.server, "/home/we/dust/code/convolution-reverb/assets/fort-flagler-powder-room-stereo.wav", channels: [0]);
+    irR = Buffer.readChannel(context.server, "/home/we/dust/code/convolution-reverb/assets/fort-flagler-powder-room-stereo.wav", channels: [1]);
 
     context.server.sync;
 
-    bufsize = PartConv.calcBufSize(~fftsize, irBuffer);
+    bufsize = PartConv.calcBufSize(~fftsize, irL);
 
-    ~irBuf = Buffer.alloc(context.server, bufsize, 1);
-    ~irBuf.preparePartConv(irBuffer, ~fftsize);
+    ~irBufL = Buffer.alloc(context.server, bufsize, 1);
+    ~irBufL.preparePartConv(irL, ~fftsize);
+
+    ~irBufR = Buffer.alloc(context.server, bufsize, 1);
+    ~irBufR.preparePartConv(irR, ~fftsize);
 
     context.server.sync;
 
-    irBuffer.free;
+    irL.free;
+    irR.free;
 
     SynthDef(\conv, {
       arg dry, wet;
@@ -28,13 +33,8 @@ Engine_Convolution : CroneEngine {
       var sigL = SoundIn.ar(0);
       var sigR = SoundIn.ar(1);
 
-      var sum = sigL + sigR;
-      var diff = sigL - sigR;
-
-      var verbS = PartConv.ar(diff, ~fftsize, ~irBuf.bufnum);
-
-      var verbL = sum + verbS;
-      var verbR = sum - verbS;
+      var verbL = PartConv.ar(sigL, ~fftsize, ~irBufL.bufnum);
+      var verbR = PartConv.ar(sigR, ~fftsize, ~irBufR.bufnum);
 
       var outL = Mix([sigL * dry, verbL * wet * 0.2]);
       var outR = Mix([sigR * dry, verbR * wet * 0.2]);
